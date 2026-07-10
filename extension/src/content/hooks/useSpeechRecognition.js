@@ -1,9 +1,9 @@
-// useSpeechRecognition.js
+// useSpeechRecognition.js — clean, simple, button-only mic control.
+// No wake word. One recognizer. No conflicts.
 //
-// Upgraded with "Hey Jarvis" wake-word detection:
-//   - A separate always-on background recognizer listens passively for "hey jarvis"
-//   - When heard, it fires onWakeWord() so the Panel can auto-enable the main mic
-//   - The main recognizer (for commands) is unchanged
+// KEY FIX: we track a `listeningRef` flag so the onend handler only
+// auto-restarts when the user actually wants the mic ON. Calling stop()
+// sets this flag to false so onend doesn't restart.
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { storageGet, storageSet } from "../../shared/storage";
@@ -12,61 +12,16 @@ const SpeechRecognitionImpl =
   typeof window !== "undefined" &&
   (window.SpeechRecognition || window.webkitSpeechRecognition);
 
-// ── Wake-word hook (always-on, low-power) ──────────────────────────────────
-export function useWakeWord({ onWakeWord } = {}) {
-  const wakeRef = useRef(null);
-  const onWakeRef = useRef(onWakeWord);
-  onWakeRef.current = onWakeWord;
-  const activeRef = useRef(false);
-
-  useEffect(() => {
-    if (!SpeechRecognitionImpl) return;
-
-    const rec = new SpeechRecognitionImpl();
-    rec.continuous = true;
-    rec.interimResults = false;
-    rec.lang = "en-US";
-    wakeRef.current = rec;
-
-    rec.onresult = (e) => {
-      const t = e.results[e.resultIndex][0].transcript.trim().toLowerCase();
-      if (t.includes("hey jarvis") || t.includes("jarvis") || t.includes("hey jarvis")) {
-        onWakeRef.current?.();
-      }
-    };
-
-    rec.onend = () => {
-      if (activeRef.current) {
-        setTimeout(() => {
-          try { rec.start(); } catch { /* already started */ }
-        }, 500);
-      }
-    };
-
-    rec.onerror = () => { /* silently ignore wake-word errors */ };
-
-    // start immediately
-    activeRef.current = true;
-    try { rec.start(); } catch { /* ignore */ }
-
-    return () => {
-      activeRef.current = false;
-      rec.onend = null;
-      try { rec.stop(); } catch { /* ignore */ }
-    };
-  }, []);
-}
-
-// ── Main command recognizer ────────────────────────────────────────────────
 export function useSpeechRecognition({ onTranscript } = {}) {
   const [listening, setListening] = useState(false);
-  const [lang, setLang] = useState("en-US");
-  const recognitionRef = useRef(null);
-  const stoppingRef = useRef(false);
+  const [lang, setLang]           = useState("en-US");
+
+  const recognitionRef  = useRef(null);
+  const listeningRef    = useRef(false); // true = user wants mic ON
   const onTranscriptRef = useRef(onTranscript);
   onTranscriptRef.current = onTranscript;
 
-  // load persisted language preference
+  // Load persisted language preference
   useEffect(() => {
     storageGet("jarvisLang").then(({ jarvisLang }) => {
       setLang(jarvisLang || "en-US");
@@ -77,62 +32,74 @@ export function useSpeechRecognition({ onTranscript } = {}) {
     if (!SpeechRecognitionImpl) return undefined;
 
     const recognition = new SpeechRecognitionImpl();
-    recognition.continuous = true;
+    recognition.continuous     = true;
     recognition.interimResults = false;
-    recognition.lang = lang;
-    recognitionRef.current = recognition;
+    recognition.lang           = lang;
+    recognitionRef.current     = recognition;
 
-    recognition.onstart = () => setListening(true);
-
-    recognition.onresult = (event) => {
-      const current = event.resultIndex;
-      const transcript = event.results[current][0].transcript.trim().toLowerCase();
-      // Filter out the wake word itself so it doesn't trigger a chat command
-      if (transcript === "hey jarvis" || transcript === "jarvis") return;
-      onTranscriptRef.current?.(transcript);
+    recognition.onstart = () => {
+      setListening(true);
     };
 
+    recognition.onresult = (event) => {
+      const t = event.results[event.resultIndex][0].transcript.trim();
+      if (t) onTranscriptRef.current?.(t);
+    };
+
+    // Auto-restart ONLY if the user still wants the mic on.
+    // This prevents the recognizer from restarting after the user clicks Stop.
     recognition.onend = () => {
       setListening(false);
-      if (!stoppingRef.current) {
+      if (listeningRef.current) {
+        // Chrome stops recognition after ~60s of silence — restart it.
         setTimeout(() => {
-          try {
-            recognition.start();
-          } catch {
-            /* already started — ignore */
+          if (listeningRef.current && recognitionRef.current === recognition) {
+            try { recognition.start(); } catch { /* already started */ }
           }
-        }, 500);
+        }, 300);
       }
     };
 
     recognition.onerror = (e) => {
+      console.warn("[Jarvis mic] error:", e.error);
       if (e.error === "not-allowed" || e.error === "service-not-allowed") {
-        stoppingRef.current = true;
+        // User denied microphone — stop trying
+        listeningRef.current = false;
+        setListening(false);
+      } else if (e.error === "no-speech" || e.error === "audio-capture") {
+        // Transient errors — onend will handle restart if listeningRef is true
+        setListening(false);
       }
     };
 
     return () => {
-      stoppingRef.current = true;
+      listeningRef.current = false;
       recognition.onend = null;
-      recognition.stop();
+      recognition.onerror = null;
+      try { recognition.stop(); } catch { /* ignore */ }
+      if (recognitionRef.current === recognition) {
+        recognitionRef.current = null;
+      }
     };
   }, [lang]);
 
   const start = useCallback(() => {
-    stoppingRef.current = false;
-    try {
-      recognitionRef.current?.start();
-    } catch {
-      /* already listening — ignore */
-    }
+    if (listeningRef.current) return; // already on
+    listeningRef.current = true;
+    try { recognitionRef.current?.start(); } catch { /* already listening */ }
   }, []);
 
   const stop = useCallback(() => {
-    stoppingRef.current = true;
-    recognitionRef.current?.stop();
+    if (!listeningRef.current) return; // already off
+    listeningRef.current = false;
+    setListening(false);
+    try { recognitionRef.current?.stop(); } catch { /* already stopped */ }
   }, []);
 
   const switchLanguage = useCallback(async (nextLang) => {
+    // Stop mic before switching language (re-creates the recognizer via useEffect)
+    listeningRef.current = false;
+    try { recognitionRef.current?.stop(); } catch { /* ignore */ }
     await storageSet({ jarvisLang: nextLang });
     setLang(nextLang);
   }, []);
