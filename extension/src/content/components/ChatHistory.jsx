@@ -10,12 +10,17 @@ export default function ChatHistory({ history, busy }) {
   if (history.length === 0 && !busy) {
     return (
       <div className="jarvis-chat jarvis-chat--empty">
-        <span className="jarvis-chat--empty-icon">🤖</span>
-        <p>I'm Jarvis, your AI reading companion.</p>
+        <div className="jarvis-chat--empty-orb">🤖</div>
+        <p className="jarvis-chat--empty-title">Hi, I'm Jarvis!</p>
         <p className="jarvis-chat--hint">
-          Say <strong>"Hey Jarvis"</strong> or type below to get started.
-          I can summarize, explain, translate, and read this page aloud.
+          Your AI reading companion. I can summarize, explain, translate,
+          and read this page aloud. Just type below or press the mic!
         </p>
+        <div className="jarvis-chat--tips">
+          <span className="jarvis-tip">💬 "Summarize this page"</span>
+          <span className="jarvis-tip">🌐 "Translate this"</span>
+          <span className="jarvis-tip">📖 "Explain this article"</span>
+        </div>
       </div>
     );
   }
@@ -24,7 +29,9 @@ export default function ChatHistory({ history, busy }) {
     <div className="jarvis-chat">
       {history.map((turn, i) => (
         <div key={i} className={`jarvis-bubble jarvis-bubble--${turn.role}`}>
-          <span className="jarvis-bubble__label">{turn.role === "user" ? "You" : "Jarvis"}</span>
+          <span className="jarvis-bubble__label">
+            {turn.role === "user" ? "You" : "Jarvis"}
+          </span>
           <p>{turn.content}</p>
         </div>
       ))}

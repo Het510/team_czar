@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useState, useCallback, useRef } from "react"
 import VoiceOrb from "./components/VoiceOrb";
 import ChatHistory from "./components/ChatHistory";
 import Controls from "./components/Controls";
-import TranslateDropdown from "./components/TranslateDropdown";
 import { useSpeechRecognition } from "./hooks/useSpeechRecognition";
 import { useSpeechSynthesis } from "./hooks/useSpeechSynthesis";
 import { matchVoiceCommand } from "./lib/voiceCommands";
@@ -62,18 +61,6 @@ export default function Panel({ page, onClose, initialAction }) {
     },
   });
 
-  // ── Translate whole page to chosen language ──
-  const handleTranslatePage = useCallback(
-    (targetLanguage) => {
-      const snippet = page.textContent?.slice(0, 2000) || page.title || "this page";
-      runAssistant("translate", `Translate this page to ${targetLanguage}`, {
-        selectionText: snippet,
-        targetLanguage,
-      });
-    },
-    [page, runAssistant]
-  );
-
   const appendTurn = useCallback(
     (role, content) => {
       setHistory((prev) => {
@@ -88,6 +75,7 @@ export default function Panel({ page, onClose, initialAction }) {
   // ── Reset conversation ──
   const handleReset = useCallback(() => {
     tts.stop();
+    recognition.stop();
     setHistory([]);
     setSummary(null);
     setTranscript("");
@@ -95,7 +83,7 @@ export default function Panel({ page, onClose, initialAction }) {
     savePageState(page.url, { history: [], summary: null, readingProgress: { paragraphIndex: 0 } });
     setResetDone(true);
     setTimeout(() => setResetDone(false), 1800);
-  }, [page.url, tts]);
+  }, [page.url, tts, recognition]);
 
   const runAssistant = useCallback(
     async (command, message, target) => {
@@ -105,9 +93,11 @@ export default function Panel({ page, onClose, initialAction }) {
       try {
         let reply;
         if (command === "translate") {
+          const textToTranslate = target?.selectionText || page.textContent?.slice(0, 3000) || message;
+          const targetLang = target?.targetLanguage || "English";
           const data = await translateSelection({
-            text: target?.selectionText || message,
-            targetLanguage: target?.targetLanguage || "English",
+            text: textToTranslate,
+            targetLanguage: targetLang,
           });
           reply = data.reply;
         } else {
@@ -128,10 +118,9 @@ export default function Panel({ page, onClose, initialAction }) {
         tts.say(reply, recognition.lang);
         return reply;
       } catch (err) {
-        const msg = `Sorry, I couldn't reach the assistant backend: ${err.message}`;
+        const msg = `Sorry, I couldn't reach the assistant. Make sure the backend is running at localhost:5000. Error: ${err.message}`;
         appendTurn("assistant", msg);
         setError(err.message);
-        tts.say("Sorry, I ran into a problem reaching the backend.", recognition.lang);
       } finally {
         setBusy(false);
       }
@@ -162,7 +151,8 @@ export default function Panel({ page, onClose, initialAction }) {
           runAssistant("explain_article", "Explain this article", customTarget);
           return;
         case "explain_code": {
-          const codeId = customTarget?.codeId || page.codeBlocks?.[0]?.id;
+          const blocks = page.codeBlocks;
+          const codeId = customTarget?.codeId || (blocks && blocks[0] ? blocks[0].id : undefined);
           runAssistant("explain_code", "Explain this code", { codeId });
           return;
         }
@@ -214,6 +204,19 @@ export default function Panel({ page, onClose, initialAction }) {
   const handleToggleMic  = () => recognition.listening ? recognition.stop() : recognition.start();
   const handleToggleLang = () => recognition.switchLanguage(recognition.lang === "en-US" ? "hi-IN" : "en-US");
 
+  // Translate button handler — translates the current page content to English
+  const handleTranslate = useCallback(() => {
+    runAssistant("translate", "Translate this page to English", {
+      selectionText: page.textContent?.slice(0, 3000) || "",
+      targetLanguage: "English",
+    });
+  }, [runAssistant, page.textContent]);
+
+  // Summarize button handler
+  const handleSummarize = useCallback(() => {
+    runAssistant("summarize", "Summarize this page");
+  }, [runAssistant]);
+
   // Run initial action (from selection toolbar) once on mount
   const initialActionRef = useRef(initialAction);
   useEffect(() => {
@@ -228,9 +231,11 @@ export default function Panel({ page, onClose, initialAction }) {
   const handleSubmitTyped = (e) => {
     e.preventDefault();
     if (!inputValue.trim() || busy) return;
-    const action = matchVoiceCommand(inputValue.toLowerCase());
-    action ? handleVoiceCommand(action, inputValue) : runAssistant("chat", inputValue);
+    const text = inputValue.trim();
+    const action = matchVoiceCommand(text.toLowerCase());
+    action ? handleVoiceCommand(action, text) : runAssistant("chat", text);
     setInputValue("");
+    setTranscript("");
   };
 
   const paragraphPreview = useMemo(() => {
@@ -256,6 +261,7 @@ export default function Panel({ page, onClose, initialAction }) {
           )}
           {/* Reset conversation button */}
           <button
+            id="jarvis-reset-btn"
             className="jarvis-panel__reset-btn"
             onClick={handleReset}
             title="Reset conversation"
@@ -263,7 +269,14 @@ export default function Panel({ page, onClose, initialAction }) {
           >
             {resetDone ? "✓" : "↺"}
           </button>
-          <button className="jarvis-panel__close" onClick={onClose} aria-label="Close assistant">✕</button>
+          <button
+            id="jarvis-close-btn"
+            className="jarvis-panel__close"
+            onClick={onClose}
+            aria-label="Close assistant"
+          >
+            ✕
+          </button>
         </div>
       </header>
 
@@ -287,25 +300,28 @@ export default function Panel({ page, onClose, initialAction }) {
 
       {/* ── Error banner ── */}
       {error && (
-        <div className="jarvis-panel__error">⚠️ {error}</div>
+        <div className="jarvis-panel__error">
+          ⚠️ {error}
+          <br />
+          <small>Make sure the backend server is running: <code>cd backend && npm start</code></small>
+        </div>
       )}
 
       {/* ── Input row ── */}
       <form className="jarvis-panel__input-row" onSubmit={handleSubmitTyped}>
         <input
+          id="jarvis-chat-input"
           type="text"
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
-          placeholder="Ask about this page…"
+          placeholder={busy ? "Jarvis is thinking…" : "Ask about this page…"}
           disabled={busy}
+          autoComplete="off"
         />
-        <button type="submit" disabled={busy || !inputValue.trim()}>
+        <button id="jarvis-send-btn" type="submit" disabled={busy || !inputValue.trim()}>
           {busy ? "…" : "Send"}
         </button>
       </form>
-
-      {/* ── Translate Dropdown (above controls) ── */}
-      <TranslateDropdown onTranslate={handleTranslatePage} busy={busy} />
 
       {/* ── Controls ── */}
       <Controls
@@ -319,6 +335,8 @@ export default function Panel({ page, onClose, initialAction }) {
         onPause={tts.pause}
         onResume={tts.resume}
         onStop={tts.stop}
+        onSummarize={handleSummarize}
+        onTranslate={handleTranslate}
       />
     </div>
   );

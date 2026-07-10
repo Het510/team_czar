@@ -195,20 +195,50 @@
 .jarvis-chat::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
 
 .jarvis-chat--empty {
-  opacity: 0.6;
+  opacity: 0.85;
   font-size: 12.5px;
-  padding: 28px 14px;
+  padding: 24px 14px;
   text-align: center;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
 }
-.jarvis-chat--empty-icon { font-size: 28px; }
+.jarvis-chat--empty-orb {
+  font-size: 32px;
+  animation: orb-float 3s ease-in-out infinite;
+}
+@keyframes orb-float {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-5px); }
+}
+.jarvis-chat--empty-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #e8efff;
+  margin: 0;
+}
 .jarvis-chat--hint {
-  font-size: 11px;
+  font-size: 11.5px;
   opacity: 0.55;
+  margin: 0;
+  line-height: 1.5;
+}
+.jarvis-chat--tips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  justify-content: center;
   margin-top: 4px;
+}
+.jarvis-tip {
+  font-size: 10.5px;
+  background: rgba(96,165,250,0.08);
+  border: 1px solid rgba(96,165,250,0.2);
+  border-radius: 20px;
+  padding: 4px 10px;
+  color: #93c5fd;
+  cursor: default;
 }
 
 .jarvis-bubble {
@@ -310,22 +340,28 @@
 /* ── Controls ── */
 .jarvis-controls {
   display: flex;
+  flex-direction: column;
   gap: 5px;
   padding: 9px 10px;
   border-top: 1px solid rgba(255,255,255,0.07);
-  flex-wrap: wrap;
+}
+.jarvis-controls__row {
+  display: flex;
+  gap: 5px;
 }
 .jarvis-btn {
   flex: 1;
-  min-width: 60px;
+  min-width: 52px;
   background: rgba(255,255,255,0.05);
   border: 1px solid rgba(255,255,255,0.09);
   color: #cbd5e1;
   border-radius: 9px;
   padding: 7px 5px;
-  font-size: 11.5px;
+  font-size: 11px;
   cursor: pointer;
   transition: background 0.15s, border-color 0.15s, transform 0.1s;
+  white-space: nowrap;
+  font-family: inherit;
 }
 .jarvis-btn:hover:not(:disabled) {
   background: rgba(255,255,255,0.1);
@@ -333,21 +369,41 @@
 }
 .jarvis-btn:disabled { opacity: 0.35; cursor: default; }
 .jarvis-btn--mic.is-active {
-  background: rgba(239,68,68,0.2);
-  border-color: rgba(239,68,68,0.4);
+  background: rgba(239,68,68,0.18);
+  border-color: rgba(239,68,68,0.45);
   color: #fca5a5;
   animation: mic-pulse 1.5s ease-in-out infinite;
 }
 @keyframes mic-pulse {
   0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.3); }
-  50%       { box-shadow: 0 0 0 4px rgba(239,68,68,0); }
+  50%       { box-shadow: 0 0 0 5px rgba(239,68,68,0); }
 }
-.jarvis-btn--lang {
-  background: rgba(96,165,250,0.08);
-  border-color: rgba(96,165,250,0.25);
+.jarvis-btn--action {
+  background: rgba(59,130,246,0.08);
+  border-color: rgba(59,130,246,0.2);
   color: #93c5fd;
 }
-.jarvis-btn--lang:hover { background: rgba(96,165,250,0.18) !important; }
+.jarvis-btn--action:hover:not(:disabled) {
+  background: rgba(59,130,246,0.2) !important;
+  border-color: rgba(59,130,246,0.4);
+}
+.jarvis-btn--translate {
+  background: rgba(16,185,129,0.08);
+  border-color: rgba(16,185,129,0.2);
+  color: #6ee7b7;
+}
+.jarvis-btn--translate:hover:not(:disabled) {
+  background: rgba(16,185,129,0.2) !important;
+  border-color: rgba(16,185,129,0.4);
+}
+.jarvis-btn--lang {
+  flex: 0 0 auto;
+  min-width: 38px;
+  background: rgba(124,58,237,0.08);
+  border-color: rgba(124,58,237,0.25);
+  color: #c4b5fd;
+}
+.jarvis-btn--lang:hover:not(:disabled) { background: rgba(124,58,237,0.18) !important; }
 
 /* ── Voice orb ── */
 .jarvis-orb {
@@ -419,98 +475,3 @@
   opacity: 0.5;
   padding: 6px 8px !important;
 }
-
-/* ── Translate Dropdown ── */
-.jarvis-translate-wrap {
-  position: relative;
-  padding: 0 10px 8px;
-}
-
-.jarvis-btn--translate {
-  width: 100%;
-  background: linear-gradient(135deg, rgba(124,58,237,0.18), rgba(59,130,246,0.18));
-  border: 1px solid rgba(124,58,237,0.35);
-  color: #c4b5fd;
-  border-radius: 9px;
-  padding: 8px 10px;
-  font-size: 12.5px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.15s, transform 0.1s;
-  letter-spacing: 0.2px;
-}
-.jarvis-btn--translate:hover:not(:disabled) {
-  background: linear-gradient(135deg, rgba(124,58,237,0.28), rgba(59,130,246,0.25));
-  transform: translateY(-1px);
-}
-.jarvis-btn--translate:disabled { opacity: 0.4; cursor: default; }
-
-.jarvis-translate-dropdown {
-  position: absolute;
-  bottom: calc(100% + 4px);
-  left: 10px;
-  right: 10px;
-  background: rgba(10,12,26,0.97);
-  border: 1px solid rgba(124,58,237,0.3);
-  border-radius: 14px;
-  box-shadow: 0 16px 48px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04) inset;
-  backdrop-filter: blur(20px);
-  overflow: hidden;
-  z-index: 10;
-  animation: dropdown-in 0.18s cubic-bezier(0.34,1.56,0.64,1);
-}
-@keyframes dropdown-in {
-  from { opacity: 0; transform: translateY(8px) scale(0.97); }
-  to   { opacity: 1; transform: translateY(0)  scale(1);    }
-}
-
-.jarvis-translate-search {
-  width: 100%;
-  background: rgba(255,255,255,0.05);
-  border: none;
-  border-bottom: 1px solid rgba(255,255,255,0.07);
-  padding: 9px 12px;
-  color: #e8efff;
-  font-size: 12px;
-  outline: none;
-  font-family: inherit;
-}
-.jarvis-translate-search::placeholder { color: rgba(232,239,255,0.35); }
-
-.jarvis-translate-list {
-  max-height: 200px;
-  overflow-y: auto;
-  padding: 4px 0;
-}
-.jarvis-translate-list::-webkit-scrollbar { width: 3px; }
-.jarvis-translate-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
-
-.jarvis-translate-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  padding: 7px 12px;
-  background: none;
-  border: none;
-  color: #e8efff;
-  cursor: pointer;
-  font-size: 12.5px;
-  font-family: inherit;
-  text-align: left;
-  transition: background 0.1s;
-}
-.jarvis-translate-item:hover {
-  background: rgba(124,58,237,0.18);
-}
-.jarvis-translate-flag { font-size: 15px; }
-.jarvis-translate-name { font-weight: 500; flex: 1; }
-.jarvis-translate-native { font-size: 11px; color: rgba(232,239,255,0.45); }
-
-.jarvis-translate-empty {
-  padding: 12px;
-  text-align: center;
-  font-size: 12px;
-  color: rgba(232,239,255,0.4);
-}
-

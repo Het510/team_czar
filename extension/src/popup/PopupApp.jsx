@@ -5,16 +5,18 @@ const FEATURES = [
   { icon: "🎙️", label: "Voice Commands" },
   { icon: "📖", label: "Read Aloud" },
   { icon: "🧠", label: "AI Summaries" },
-  { icon: "🌐", label: "Hindi / English" },
+  { icon: "🌐", label: "Translate" },
+  { icon: "💬", label: "Hindi / English" },
+  { icon: "🔍", label: "Explain Text" },
 ];
 
 const COMMANDS = [
   "Summarize this page",
   "Explain this article",
+  "Translate this page",
   "Read this page",
   "What does this mean?",
   "Read important points",
-  "Explain this code",
 ];
 
 export default function PopupApp() {
@@ -38,6 +40,9 @@ export default function PopupApp() {
       const { backendUrl: url } = await storageGet("backendUrl");
       const base = url || "http://localhost:5000";
       const res = await fetch(`${base}/api/health`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
         signal: AbortSignal.timeout(4000),
       });
       setStatus(res.ok ? "online" : "offline");
