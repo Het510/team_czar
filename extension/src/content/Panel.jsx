@@ -21,6 +21,8 @@ export default function Panel({ page, onClose, initialAction }) {
   const historyRef = useRef(history);
   historyRef.current = history;
 
+  const handleVoiceCommandRef = useRef(null);
+
   // ── Speech Recognition (declared first — used in callbacks below) ──
   const recognition = useSpeechRecognition({
     onTranscript: (t) => {
@@ -198,8 +200,9 @@ export default function Panel({ page, onClose, initialAction }) {
     [page, runAssistant, tts, recognition.lang]
   );
 
-  const handleVoiceCommandRef = useRef(handleVoiceCommand);
-  handleVoiceCommandRef.current = handleVoiceCommand;
+  useEffect(() => {
+    handleVoiceCommandRef.current = handleVoiceCommand;
+  }, [handleVoiceCommand]);
 
   const handleToggleMic  = () => recognition.listening ? recognition.stop() : recognition.start();
   const handleToggleLang = () => recognition.switchLanguage(recognition.lang === "en-US" ? "hi-IN" : "en-US");
