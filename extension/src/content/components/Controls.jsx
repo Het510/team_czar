@@ -1,12 +1,16 @@
 import React from "react";
+import LanguageSelector from "./LanguageSelector";
 
 export default function Controls({
   listening,
   speaking,
   paused,
   lang,
+  alwaysOnEnabled,
+  wakeListening,
   onToggleMic,
-  onToggleLang,
+  onSwitchLang,
+  onToggleAlwaysOn,
   onRead,
   onPause,
   onResume,
@@ -46,7 +50,7 @@ export default function Controls({
         </button>
       </div>
 
-      {/* Row 2: Playback + settings */}
+      {/* Row 2: Playback + translate */}
       <div className="jarvis-controls__row">
         {!paused ? (
           <button
@@ -87,15 +91,33 @@ export default function Controls({
         >
           🌐 Translate
         </button>
+      </div>
 
+      {/* Row 3: Language selector + Always-on toggle */}
+      <div className="jarvis-controls__row jarvis-controls__row--settings">
+        {/* Always-on wake word toggle */}
         <button
-          id="jarvis-lang-btn"
-          className="jarvis-btn jarvis-btn--lang"
-          onClick={onToggleLang}
-          title={`Switch voice language (Current: ${lang === "en-US" ? "English" : "Hindi"})`}
+          id="jarvis-alwayson-btn"
+          className={`jarvis-btn jarvis-btn--alwayson ${alwaysOnEnabled ? "is-active" : ""}`}
+          onClick={onToggleAlwaysOn}
+          title={
+            alwaysOnEnabled
+              ? `Always-on: ON — say "Hey Jarvis" to activate without pressing the mic button`
+              : `Always-on: OFF — click to enable "Hey Jarvis" wake word`
+          }
         >
-          {lang === "en-US" ? "EN" : "HI"}
+          {alwaysOnEnabled ? (
+            <>
+              <span className={`jarvis-wake-dot ${wakeListening ? "is-listening" : ""}`} />
+              👂 Hey Jarvis
+            </>
+          ) : (
+            "🔇 Wake: Off"
+          )}
         </button>
+
+        {/* Language dropdown */}
+        <LanguageSelector lang={lang} onSwitch={onSwitchLang} />
       </div>
     </div>
   );

@@ -405,6 +405,163 @@
 }
 .jarvis-btn--lang:hover:not(:disabled) { background: rgba(124,58,237,0.18) !important; }
 
+/* ── Always-on wake word toggle ── */
+.jarvis-controls__row--settings {
+  align-items: center;
+}
+.jarvis-btn--alwayson {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  justify-content: center;
+  background: rgba(15, 23, 42, 0.5);
+  border-color: rgba(100,116,139,0.25);
+  color: #64748b;
+  transition: background 0.2s, border-color 0.2s, color 0.2s;
+}
+.jarvis-btn--alwayson.is-active {
+  background: rgba(16, 185, 129, 0.1);
+  border-color: rgba(16, 185, 129, 0.35);
+  color: #34d399;
+}
+.jarvis-btn--alwayson.is-active:hover:not(:disabled) {
+  background: rgba(16, 185, 129, 0.2) !important;
+}
+/* Small dot that pulses when wake recognizer is listening */
+.jarvis-wake-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: rgba(52, 211, 153, 0.3);
+  flex-shrink: 0;
+  transition: background 0.3s;
+}
+.jarvis-wake-dot.is-listening {
+  background: #34d399;
+  animation: wake-dot-pulse 2s ease-in-out infinite;
+}
+@keyframes wake-dot-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(52,211,153,0.5); }
+  50%       { box-shadow: 0 0 0 5px rgba(52,211,153,0); }
+}
+
+/* ── Language Selector ── */
+.jarvis-lang-selector {
+  position: relative;
+  flex: 0 0 auto;
+}
+.jarvis-lang-trigger {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 7px 8px;
+  min-width: 62px;
+  background: rgba(124,58,237,0.08);
+  border-color: rgba(124,58,237,0.25);
+  color: #c4b5fd;
+}
+.jarvis-lang-trigger:hover:not(:disabled) {
+  background: rgba(124,58,237,0.18) !important;
+}
+.jarvis-lang-flag   { font-size: 13px; line-height: 1; }
+.jarvis-lang-code   { font-size: 10.5px; font-weight: 700; letter-spacing: 0.04em; }
+.jarvis-lang-chevron { font-size: 7px; opacity: 0.6; }
+
+/* Dropdown */
+.jarvis-lang-dropdown {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  right: 0;
+  width: 220px;
+  max-height: 280px;
+  background: rgba(10, 12, 30, 0.97);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 14px;
+  box-shadow: 0 16px 48px rgba(0,0,0,0.7), 0 0 0 1px rgba(124,58,237,0.12) inset;
+  backdrop-filter: blur(20px);
+  overflow: hidden;
+  z-index: 2147483001;
+  animation: dropdown-in 0.15s ease;
+}
+@keyframes dropdown-in {
+  from { opacity: 0; transform: translateY(6px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0)   scale(1);    }
+}
+.jarvis-lang-dropdown__header {
+  padding: 10px 13px 7px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: rgba(196,181,253,0.55);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.jarvis-lang-dropdown__list {
+  overflow-y: auto;
+  max-height: 235px;
+}
+.jarvis-lang-dropdown__list::-webkit-scrollbar { width: 3px; }
+.jarvis-lang-dropdown__list::-webkit-scrollbar-track { background: transparent; }
+.jarvis-lang-dropdown__list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+
+/* Each language option */
+.jarvis-lang-option {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 13px;
+  background: transparent;
+  border: none;
+  color: #cbd5e1;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12px;
+  text-align: left;
+  transition: background 0.12s;
+}
+.jarvis-lang-option:hover {
+  background: rgba(124,58,237,0.15);
+}
+.jarvis-lang-option.is-active {
+  background: rgba(124,58,237,0.2);
+  color: #c4b5fd;
+}
+.jarvis-lang-option__flag {
+  font-size: 16px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.jarvis-lang-option__info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.jarvis-lang-option__name {
+  font-weight: 600;
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.jarvis-lang-option__native {
+  font-size: 10px;
+  opacity: 0.45;
+  margin-top: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.jarvis-lang-option__check {
+  color: #a78bfa;
+  font-size: 12px;
+  flex-shrink: 0;
+  font-weight: 700;
+}
+
 /* ── Voice orb ── */
 .jarvis-orb {
   position: relative;
